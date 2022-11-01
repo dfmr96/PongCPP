@@ -5,11 +5,24 @@ void GSLogoStateUpdate(float delta, ResourceManager& resource) {
 
 	InputState inputState = *resource.inputState;
 	GameStages gameStages = *resource.gameStages;
+	TextAssets textAssets = *resource.textAssets;
 
 	SpriteAssets& spriteAssets = *resource.spritesAssets;
 	Sprite& player1 = spriteAssets[1];
 	Sprite& player2 = spriteAssets[2];
 
+	extern bool canFlick;
+
+	if (canFlick) {
+		player1.isVisible = false;
+		player2.isVisible = false;
+	}
+	if (inputState.start) {
+		canFlick = false;
+		spriteAssets[0].isVisible = false;
+		player1.isVisible = true;
+		player2.isVisible = true;
+	}
 
 	// Si presione cualquier tecla (arriba, abajo, izquierda
 	if (inputState.player1Up) {

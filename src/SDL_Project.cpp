@@ -35,6 +35,8 @@ GameStages gameStages;
 Sprite paleta1;
 Sprite paleta2;
 
+extern bool canFlick = true;
+
 ResourceManager resourceManager;
 
 ///////// Variables y Constantes Globales /////////////
@@ -209,12 +211,17 @@ float timer = 1.0f * 1000; // 1000 ms
 void updateGame(float deltaTime) {
     const float BLINK_SPEED = 2.0f;
 
-    timer -= BLINK_SPEED * deltaTime;
+    if (canFlick) { 
+        timer -= BLINK_SPEED * deltaTime;
 
     // para efecto de parpadeo...
     if (timer <= 0.0f) {
         timer = 1.0f * 1000;
         textAssets[0].isVisible = !textAssets[0].isVisible;
+        }
+    }
+    else {
+        textAssets[0].isVisible = false;
     }
 
     // Small state machine using stack collection
@@ -279,6 +286,7 @@ int main(int argc, char* argv[])
 
         currentTime = SDL_GetTicks64();
 
+        
         Uint64 deltaTime = currentTime - previousTime;
 
         inputUpdate();

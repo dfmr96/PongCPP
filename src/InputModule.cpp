@@ -15,6 +15,8 @@ void onKeyUp(int keyCode, InputState& input) {
     case SDLK_s:
         input.player1Down = false;
         break;
+    case SDLK_RETURN:
+        input.start = false;
     default:
         break;
     }
@@ -33,6 +35,8 @@ void onKeyDown(int keyCode, InputState& input) {
         break;
     case SDLK_s:
         input.player1Down = true;
+    case SDLK_RETURN:
+        input.start = true;
     default:
         break;
     }

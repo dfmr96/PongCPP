@@ -14,6 +14,7 @@ typedef struct _InputState {
     bool player2Up = false;
     bool player2Down = false;
     bool pause = false;
+    bool start = false;
 }InputState;
 
 typedef struct _Sprite {
