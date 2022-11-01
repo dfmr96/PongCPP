@@ -32,6 +32,9 @@ TextAssets textAssets;
 BgmAssets musicAssets;
 GameStages gameStages;
 
+Sprite paleta1;
+Sprite paleta2;
+
 ResourceManager resourceManager;
 
 ///////// Variables y Constantes Globales /////////////
@@ -98,6 +101,26 @@ void loadAssets() {
     logoSprite.dest = dest;
     logoSprite.texture = texture;
     spritesAssets.push_back(logoSprite);
+
+    //Cargar paleta
+
+    string paletaFilePath = "assets/img/paleta.png";
+    SDL_Texture* paletaTexture = IMG_LoadTexture(renderer, paletaFilePath.c_str());
+    SDL_Rect paletaDest;
+    paletaDest.x = WIDTH >> 4;
+    paletaDest.y = (HEIGHT >> 1) - 15;
+    paletaDest.w = 8;
+    paletaDest.h = 30;
+
+    
+    paleta1.dest = paletaDest;
+    paleta1.texture = paletaTexture;
+    spritesAssets.push_back(paleta1);
+
+    paleta2.dest = paletaDest;
+    paleta2.dest.x = WIDTH - paletaDest.x;
+    paleta2.texture = paletaTexture;
+    spritesAssets.push_back(paleta2);
 
     // Cargo el texto...
     string fontfilePath = "assets/fonts/arial.ttf";

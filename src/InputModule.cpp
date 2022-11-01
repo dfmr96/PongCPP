@@ -4,16 +4,16 @@
 void onKeyUp(int keyCode, InputState& input) {
     switch (keyCode) {
     case SDLK_UP:
-        input.up = false;
+        input.player2Up = false;
         break;
     case SDLK_DOWN:
-        input.down = false;
+        input.player2Down = false;
         break;
-    case SDLK_LEFT:
-        input.left = false;
+    case SDLK_w:
+        input.player1Up = false;
         break;
-    case SDLK_RIGHT:
-        input.right = false;
+    case SDLK_s:
+        input.player1Down = false;
         break;
     default:
         break;
@@ -23,17 +23,16 @@ void onKeyUp(int keyCode, InputState& input) {
 void onKeyDown(int keyCode, InputState& input) {
     switch (keyCode) {
     case SDLK_UP:
-        input.up = true;
+        input.player2Up = true;
         break;
     case SDLK_DOWN:
-        input.down = true;
+        input.player2Down = true;
         break;
-    case SDLK_LEFT:
-        input.left = true;
+    case SDLK_w:
+        input.player1Up = true;
         break;
-    case SDLK_RIGHT:
-        input.right = true;
-        break;
+    case SDLK_s:
+        input.player1Down = true;
     default:
         break;
     }

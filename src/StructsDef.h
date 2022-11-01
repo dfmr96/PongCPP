@@ -9,11 +9,11 @@ using namespace std;
 #include "SDL_mixer.h"
 
 typedef struct _InputState {
-    bool up = false;
-    bool down = false;
-    bool right = false;
-    bool left = false;
-    bool fire = false;
+    bool player1Up = false;
+    bool player1Down = false;
+    bool player2Up = false;
+    bool player2Down = false;
+    bool pause = false;
 }InputState;
 
 typedef struct _Sprite {
