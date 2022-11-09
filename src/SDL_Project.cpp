@@ -18,7 +18,6 @@ using namespace std;
 #include "StructsDef.h"
 ///////// Definicion de estructuras /////////////
 
-
 ///////// Variables y Constantes Globales /////////////
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -35,8 +34,7 @@ GameStages gameStages;
 Sprite paleta1;
 Sprite paleta2;
 
-extern bool canFlick = true;
-
+extern bool isOnPressStart = true;
 ResourceManager resourceManager;
 
 ///////// Variables y Constantes Globales /////////////
@@ -44,137 +42,171 @@ ResourceManager resourceManager;
 ///////// Funciones de inicializacion y destruccion /////////////
 void initEngine()
 {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
 
-    TTF_Init();
+	TTF_Init();
 
-    int initted = Mix_Init(MIX_INIT_MP3);
-    if ( (initted & MIX_INIT_MP3) != MIX_INIT_MP3) {
-        cout << "Mix_Init: Failed to init required ogg and mod support!" << endl;
-        cout << "Mix_Init: " << Mix_GetError() << endl;
-        // handle error
-    }
+	int initted = Mix_Init(MIX_INIT_MP3);
+	if ((initted & MIX_INIT_MP3) != MIX_INIT_MP3) {
+		cout << "Mix_Init: Failed to init required ogg and mod support!" << endl;
+		cout << "Mix_Init: " << Mix_GetError() << endl;
+		// handle error
+	}
 
-    window = SDL_CreateWindow("SDL2 Template Project", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	window = SDL_CreateWindow("SDL2 Template Project", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    // Initializing Resource Manager
-    resourceManager.spritesAssets = &spritesAssets;
-    resourceManager.textAssets = &textAssets;
-    resourceManager.musicAssets = &musicAssets;
-    resourceManager.gameStages = &gameStages;
-    resourceManager.inputState = &gameInputState;
+	// Initializing Resource Manager
+	resourceManager.spritesAssets = &spritesAssets;
+	resourceManager.textAssets = &textAssets;
+	resourceManager.musicAssets = &musicAssets;
+	resourceManager.gameStages = &gameStages;
+	resourceManager.inputState = &gameInputState;
 
-    // Starting Game stage
-    GameStage logoGameStage;
-    logoGameStage.game_stageID = GS_LOGO;
-    logoGameStage.stage_name = "Logo";
+	// Starting Game stage
+	GameStage logoGameStage;
+	logoGameStage.game_stageID = GS_LOGO;
+	logoGameStage.stage_name = "Logo";
 
-    gameStages.push(logoGameStage);
+	gameStages.push(logoGameStage);
 }
 
 void destroyEngine() {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    TTF_Quit();
-    Mix_CloseAudio();
-    Mix_Quit();
-    SDL_Quit();
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	TTF_Quit();
+	Mix_CloseAudio();
+	Mix_Quit();
+	SDL_Quit();
 }
 
 ///////// Funciones de inicializacion y destruccion /////////////
 
-
 ///////// Funciones de carga y liberacion de recursos /////////////
 
 void loadAssets() {
+	// Cargo el Logo principal.
+	string filePath = "assets/img/ultimatepong.png";
+	SDL_Texture* texture = IMG_LoadTexture(renderer, filePath.c_str());
+	SDL_Rect dest;
+	dest.x = 0;
+	dest.y = 0;
+	dest.w = WIDTH;
+	dest.h = HEIGHT;
 
-    // Cargo el Logo principal.
-    string filePath = "assets/img/ultimatepong.png";
-    SDL_Texture* texture = IMG_LoadTexture(renderer, filePath.c_str());
-    SDL_Rect dest;
-    dest.x = 0;
-    dest.y = 0;
-    dest.w = WIDTH;
-    dest.h = HEIGHT;
+	Sprite logoSprite;
+	logoSprite.dest = dest;
+	logoSprite.texture = texture;
+	spritesAssets.push_back(logoSprite);
 
-    Sprite logoSprite;
-    logoSprite.dest = dest;
-    logoSprite.texture = texture;
-    spritesAssets.push_back(logoSprite);
+	//Cargar paleta
 
-    //Cargar paleta
+	string paletaFilePath = "assets/img/paleta.png";
+	SDL_Texture* paletaTexture = IMG_LoadTexture(renderer, paletaFilePath.c_str());
+	SDL_Rect paletaDest;
+	paletaDest.x = WIDTH >> 4;
+	paletaDest.y = (HEIGHT >> 1) - 15;
+	paletaDest.w = 8;
+	paletaDest.h = 30;
 
-    string paletaFilePath = "assets/img/paleta.png";
-    SDL_Texture* paletaTexture = IMG_LoadTexture(renderer, paletaFilePath.c_str());
-    SDL_Rect paletaDest;
-    paletaDest.x = WIDTH >> 4;
-    paletaDest.y = (HEIGHT >> 1) - 15;
-    paletaDest.w = 8;
-    paletaDest.h = 30;
+	paleta1.dest = paletaDest;
+	paleta1.texture = paletaTexture;
+	spritesAssets.push_back(paleta1);
 
-    
-    paleta1.dest = paletaDest;
-    paleta1.texture = paletaTexture;
-    spritesAssets.push_back(paleta1);
+	paleta2.dest = paletaDest;
+	paleta2.dest.x = WIDTH - paletaDest.x;
+	paleta2.texture = paletaTexture;
+	spritesAssets.push_back(paleta2);
 
-    paleta2.dest = paletaDest;
-    paleta2.dest.x = WIDTH - paletaDest.x;
-    paleta2.texture = paletaTexture;
-    spritesAssets.push_back(paleta2);
+	// Cargar textos
+	string fontFilePath = "assets/fonts/bit5x3.ttf";
+	TTF_Font* bit5x3 = TTF_OpenFont(fontFilePath.c_str(), 24); //this opens a font style and sets a size
+	SDL_Color White = { 255, 255, 255 };  // this is the color in rgb format, maxing out all would give you the color white, and it will be your text's color
+	SDL_Surface* pressStartSurface = TTF_RenderText_Solid(bit5x3, "PRESS START", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+	SDL_Surface* singlePlayerSurface = TTF_RenderText_Solid(bit5x3, "1 PLAYER", White);
+	SDL_Surface* multiPlayerSurface = TTF_RenderText_Solid(bit5x3, "2 PLAYER", White);
 
-    // Cargo el texto...
-    string fontfilePath = "assets/fonts/bit5x3.ttf";
+	SDL_Texture* pressStartTexture = SDL_CreateTextureFromSurface(renderer, pressStartSurface); //now you can convert it into a texture
+	SDL_Texture* singlePlayerTexture = SDL_CreateTextureFromSurface(renderer, singlePlayerSurface);
+	SDL_Texture* multiPlayerTexture = SDL_CreateTextureFromSurface(renderer, multiPlayerSurface);
 
-    TTF_Font* Sans = TTF_OpenFont(fontfilePath.c_str(), 24); //this opens a font style and sets a size
+	SDL_Rect pressStartRect; //create a rect
+	pressStartRect.w = WIDTH * 0.2; // controls the width of the rect
+	pressStartRect.h = HEIGHT * 0.1; // controls the height of the rect
+	pressStartRect.x = (WIDTH >> 1) - (pressStartRect.w >> 1);  //controls the rect's x coordinate
+	pressStartRect.y = HEIGHT - (HEIGHT >> 2); // controls the rect's y coordinte
 
-    SDL_Color White = { 255, 255, 255 };  // this is the color in rgb format, maxing out all would give you the color white, and it will be your text's color
+	SDL_Rect singlePlayerRect;
+	singlePlayerRect.w = WIDTH * 0.1;
+	singlePlayerRect.h = HEIGHT * 0.05;
+	singlePlayerRect.x = (WIDTH >> 1) - (singlePlayerRect.w >> 1);
+	singlePlayerRect.y = HEIGHT - (HEIGHT >> 2);
 
-    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, "PRESS START", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+	SDL_Rect multiPlayerRect;
+	multiPlayerRect.w = WIDTH * 0.1;
+	multiPlayerRect.h = HEIGHT * 0.05;
+	multiPlayerRect.x = (WIDTH >> 1) - (multiPlayerRect.w >> 1);
+	multiPlayerRect.y = HEIGHT - (HEIGHT >> 3);
 
-    SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage); //now you can convert it into a texture
+	Text pressStartText;
+	pressStartText.font = bit5x3;
+	pressStartText.color = White;
+	pressStartText.surface = pressStartSurface;
+	pressStartText.texture = pressStartTexture;
+	pressStartText.dest = pressStartRect;
 
-    SDL_Rect Message_rect; //create a rect
-    Message_rect.w = WIDTH * 0.2; // controls the width of the rect
-    Message_rect.h = HEIGHT * 0.1; // controls the height of the rect
-    Message_rect.x = (WIDTH >> 1) - (Message_rect.w >> 1);  //controls the rect's x coordinate 
-    Message_rect.y = HEIGHT - (HEIGHT >> 2); // controls the rect's y coordinte
+	Text singlePlayerText;
+	singlePlayerText.font = bit5x3;
+	singlePlayerText.color = White;
+	singlePlayerText.surface = singlePlayerSurface;
+	singlePlayerText.texture = singlePlayerTexture;
+	singlePlayerText.dest = singlePlayerRect;
 
-    Text mainText;
-    mainText.font = Sans;
-    mainText.color = White;
-    mainText.surface = surfaceMessage;
-    mainText.texture = Message;
-    mainText.dest = Message_rect;
+	Text multiPlayerText;
+	multiPlayerText.font = bit5x3;
+	multiPlayerText.color = White;
+	multiPlayerText.surface = multiPlayerSurface;
+	multiPlayerText.texture = multiPlayerTexture;
+	multiPlayerText.dest = multiPlayerRect;
 
-    textAssets.push_back(mainText);
+	textAssets.push_back(pressStartText);
+	textAssets.push_back(singlePlayerText);
+	textAssets.push_back(multiPlayerText);
+	// Cargo Sonidos y BGM
+	string soundFilePath = "assets/bgm/finalguy.mp3";
+	Mix_Music* music;
+	music = Mix_LoadMUS(soundFilePath.c_str());
 
-    // Cargo Sonidos y BGM
-    string soundFilePath = "assets/bgm/finalguy.mp3";
-    Mix_Music* music;
-    music = Mix_LoadMUS(soundFilePath.c_str());
-    
-    Bgm bgm01;
-    bgm01.music = music;
+	Bgm bgm01;
+	bgm01.music = music;
 
-    musicAssets.push_back(bgm01);
+	musicAssets.push_back(bgm01);
+}
 
+void hideAssets() {
+	for (int i = 0; i < spritesAssets.size(); i++) {
+		spritesAssets[i].isVisible = false;
+	}
+
+	for (int i = 0; i < textAssets.size(); i++) {
+		textAssets[i].isVisible = false;
+	}
 }
 
 void unloadAssets() {
-    for (int i = 0; i < spritesAssets.size(); i++) {
-        SDL_DestroyTexture(spritesAssets[i].texture);
-    }
+	for (int i = 0; i < spritesAssets.size(); i++) {
+		SDL_DestroyTexture(spritesAssets[i].texture);
+	}
 
-    for (int i = 0; i < textAssets.size(); i++) {
-        SDL_FreeSurface(textAssets[i].surface);
-        SDL_DestroyTexture(textAssets[i].texture);
-    }
+	for (int i = 0; i < textAssets.size(); i++) {
+		SDL_FreeSurface(textAssets[i].surface);
+		SDL_DestroyTexture(textAssets[i].texture);
+	}
 
-    for (int i = 0; i < musicAssets.size(); i++) {
-        Mix_FreeMusic(musicAssets[i].music);
-    }
+	for (int i = 0; i < musicAssets.size(); i++) {
+		Mix_FreeMusic(musicAssets[i].music);
+	}
 }
 
 ///////// Funciones de carga y liberacion de recursos /////////////
@@ -182,87 +214,70 @@ void unloadAssets() {
 ///////// Funciones de actualizacion y pintado /////////////
 
 void inputUpdate() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        
-        switch (event.type) {
-        case SDL_KEYDOWN:
-            onKeyDown(event.key.keysym.sym, gameInputState);
-            break;
-        case SDL_KEYUP:
-            onKeyUp(event.key.keysym.sym, gameInputState);
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            break;
-        case SDL_MOUSEBUTTONUP:
-            break;
-        case SDL_QUIT:
-            isGameRunning = SDL_FALSE;
-            break;
-        default:
-            break;
-        }
-    }
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			onKeyDown(event.key.keysym.sym, gameInputState);
+			break;
+		case SDL_KEYUP:
+			onKeyUp(event.key.keysym.sym, gameInputState);
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			break;
+		case SDL_MOUSEBUTTONUP:
+			break;
+		case SDL_QUIT:
+			isGameRunning = SDL_FALSE;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 // Para ser usado en distintos contadores..
-float timer = 1.0f * 1000; // 1000 ms
+extern float timer = 1.0f * 1000; // 1000 ms
 
 void updateGame(float deltaTime) {
-    const float BLINK_SPEED = 2.0f;
-
-    if (canFlick) { 
-        timer -= BLINK_SPEED * deltaTime;
-
-    // para efecto de parpadeo...
-    if (timer <= 0.0f) {
-        timer = 1.0f * 1000;
-        textAssets[0].isVisible = !textAssets[0].isVisible;
-        }
-    }
-    else {
-        textAssets[0].isVisible = false;
-    }
-
-    // Small state machine using stack collection
-    switch (gameStages.top().game_stageID)
-    {
-    case GS_LOGO:
-        GSLogoStateUpdate(deltaTime, resourceManager);
-        break;
-    case GS_MAIN_MENU:
-        break;
-    case GS_GAMEPLAY:
-        break;
-    case GS_INVALID:
-    default:
-        break;
-    }
-
+	// Small state machine using stack collection
+	switch (gameStages.top().game_stageID)
+	{
+	case GS_LOGO:
+		GSLogoStateUpdate(deltaTime, resourceManager);
+		break;
+	case GS_MAIN_MENU:
+		break;
+	case GS_GAMEPLAY:
+		break;
+	case GS_INVALID:
+	default:
+		break;
+	}
 }
 
 void render()
 {
-    // Limpio la pantalla 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
+	// Limpio la pantalla
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderClear(renderer);
 
-    // Pinto todos los sprites...
-    for (int i = 0; i < spritesAssets.size(); i++) {
-        if (spritesAssets[i].isVisible) {
-            SDL_RenderCopy(renderer, spritesAssets[i].texture, NULL, &spritesAssets[i].dest);
-        }
-    }
+	// Pinto todos los sprites...
+	for (int i = 0; i < spritesAssets.size(); i++) {
+		if (spritesAssets[i].isVisible) {
+			SDL_RenderCopy(renderer, spritesAssets[i].texture, NULL, &spritesAssets[i].dest);
+		}
+	}
 
-    // Pinto todos los textos...
-    for (int i = 0; i < textAssets.size(); i++) {
-        if (textAssets[i].isVisible) {
-            SDL_RenderCopy(renderer, textAssets[i].texture, NULL, &textAssets[i].dest);
-        }
-    }
+	// Pinto todos los textos...
+	for (int i = 0; i < textAssets.size(); i++) {
+		if (textAssets[i].isVisible) {
+			SDL_RenderCopy(renderer, textAssets[i].texture, NULL, &textAssets[i].dest);
+		}
+	}
 
-    // Presento la imagen en pantalla
-    SDL_RenderPresent(renderer);
+	// Presento la imagen en pantalla
+	SDL_RenderPresent(renderer);
 }
 
 ///////// Funciones de actualizacion y pintado /////////////
@@ -271,38 +286,38 @@ void render()
 
 int main(int argc, char* argv[])
 {
-    initEngine();
+	initEngine();
 
-    // Cargo Assets
-    loadAssets();
+	// Cargo Assets
+	loadAssets();
 
-    Mix_PlayMusic(musicAssets[0].music, -1);
+	hideAssets();
 
-    Uint64 currentTime = SDL_GetTicks64();
+	Mix_PlayMusic(musicAssets[0].music, -1);
 
-    while (isGameRunning) {
+	Uint64 currentTime = SDL_GetTicks64();
 
-        Uint64 previousTime = currentTime;
+	while (isGameRunning) {
+		Uint64 previousTime = currentTime;
 
-        currentTime = SDL_GetTicks64();
+		currentTime = SDL_GetTicks64();
 
-        
-        Uint64 deltaTime = currentTime - previousTime;
+		Uint64 deltaTime = currentTime - previousTime;
 
-        inputUpdate();
+		inputUpdate();
 
-        updateGame(deltaTime * time_multiplier);
+		updateGame(deltaTime * time_multiplier);
 
-        render();
-    }
+		render();
+	}
 
-    // Detendo la musica 
-    Mix_HaltMusic();
+	// Detendo la musica
+	Mix_HaltMusic();
 
-    // Descargo Assets
-    unloadAssets(); 
-    destroyEngine();
-    return 0;
+	// Descargo Assets
+	unloadAssets();
+	destroyEngine();
+	return 0;
 }
 
 ///////// Funcione principal y GameLoop /////////////
