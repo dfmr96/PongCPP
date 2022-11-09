@@ -1,102 +1,74 @@
 #include "GSLogoState.h"
 #include "StructsDef.h"
+#include "SDL.h"
+#include "SDL_image.h"
 
+namespace logo {
+	enum SUBSTATE {
+		INIT_STATE = 0,
+		LOGO_STATE,
+		ENDING_STATE,
+	};
 
-void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
-	InputState inputState = *resource.inputState;
-	TextAssets& textAssets = *resource.textAssets;
-	SpriteAssets& spriteAssets = *resource.spritesAssets;
+	int subState = INIT_STATE;
+	float timer = 0;
+	const float LOGO_TIME = 5000.0f;
+	int logo_resourceID = -1;
+}
+
+using namespace logo;
+
+void loadResource(ResourceManager& resource) {
+	SDL_Renderer* renderer = resource.renderer;
+	SpriteAssets& spritesAssets = *(resource.spritesAssets);
+
+	string uadeLogoFilePath = "assets/img/uadelogo.png";
+	SDL_Texture* uadeLogoTexture = IMG_LoadTexture(renderer, uadeLogoFilePath.c_str());
+	SDL_Rect uadeLogoDest;
+	uadeLogoDest.x = WIDTH >> 2;
+	uadeLogoDest.y = HEIGHT >> 2;
+	uadeLogoDest.w = WIDTH >> 1;
+	uadeLogoDest.h = HEIGHT >> 1;
+
+	Sprite uadeLogoSprite;
+	uadeLogoSprite.dest = uadeLogoDest;
+	uadeLogoSprite.texture = uadeLogoTexture;
+	spritesAssets.push_back(uadeLogoSprite);
+
+	logo_resourceID = spritesAssets.size() - 1;
+}
+
+void unloadResource(ResourceManager& resource) {
+	SpriteAssets& spritesAssets = *resource.spritesAssets;
+	SDL_DestroyTexture(spritesAssets[logo_resourceID].texture);
+	spritesAssets.erase(spritesAssets.begin() + logo_resourceID);
+}
+
+void GSLogoStateUpdate(float delta, ResourceManager& resource) {
+	InputState& inputState = *resource.inputState;
 	GameStages& gameStages = *resource.gameStages;
 
-	const float BLINK_SPEED = 2.0f;
-	extern float timer;
-
-	extern bool isOnPressStart;
-	bool isSinglePlayer = false;
-
-	// Create Gameplay Stage
-	
-
-	/// START
-
-	spriteAssets[0].isVisible = true; // Mostrar logo
-
-	///UPDATE
-
-	timer -= BLINK_SPEED * deltaTime;
-
-	// Si esta mostrando PRESS START -> Que parpadee PRESS START
-	if (isOnPressStart) {
-		if (timer <= 0.0f) {
-			timer = 1.0f * 1000;
-			textAssets[0].isVisible = !textAssets[0].isVisible;
+	switch (subState) {
+	case INIT_STATE:
+		loadResource(resource);
+		subState = LOGO_STATE;
+		break;
+	case LOGO_STATE:
+		timer += delta;
+		if (timer >= LOGO_TIME) {
+			subState = ENDING_STATE;
 		}
-	}
-
-	//Si es presionado Start -> Esconde logo y press start, se activa la seleccion de jugador
-
-	if (inputState.start && isOnPressStart) {
-		isOnPressStart = false;
-		textAssets[0].isVisible = false;
-		textAssets[1].isVisible = true;
-		textAssets[2].isVisible = true;
-		isSinglePlayer = true;
-	}
-	
-	// Si esta seleccionando jugador y presiona ESC -> Vuelve a PRESS START
-
-	if (inputState.back && !isOnPressStart) {
-		isOnPressStart = true;
-		textAssets[1].isVisible = false;
-		textAssets[2].isVisible = false;
-	}
-
-	// Si presiona abajo es multiplayer
-
-	if (inputState.player1Down) {
-		isSinglePlayer = false;
-	}
-
-	//Si presiona arriba es singleplayer
-	if (inputState.player1Up) {
-		isSinglePlayer = true;
-	}
-
-	//Si esta en seleccion y es single player parpadea
-
-	if (isSinglePlayer && !isOnPressStart) {
-		if (timer <= 0.0f) {
-			timer = 1.0f * 1000;
-			textAssets[1].isVisible = !textAssets[1].isVisible;
-			textAssets[2].isVisible = true;
-		}
-		if (inputState.start) {
-			
-			GameStage gamePlayStage;
-			gamePlayStage.game_stageID = GS_GAMEPLAY;
-			gamePlayStage.stage_name = "Gameplay";
-			gameStages.push(gamePlayStage);
-
-		}
-	}
-	else if (!isSinglePlayer && !isOnPressStart) 	//Si esta en seleccion y no es single player parpadea
-	{
-		if (timer <= 0.0f) {
-			timer = 1.0f * 1000;
-			textAssets[2].isVisible = !textAssets[2].isVisible;
-			textAssets[1].isVisible = true;
-
-		}
-	}
-
-
-/*
-	if (inputState.start) {
+		break;
+	case ENDING_STATE:
+		subState = INIT_STATE;
+		unloadResource(resource);
+		gameStages.pop();
 
 		GameStage mainMenuGameStage;
-		mainMenuGameStage.game_stageID = GS_GAMEPLAY;
-		mainMenuGameStage.stage_name = "Gameplay";
+		mainMenuGameStage.game_stageID = GS_MAIN_MENU;
+		mainMenuGameStage.stage_name = "MainMenu";
 		gameStages.push(mainMenuGameStage);
+
+		break;
 	}
-*/
 }

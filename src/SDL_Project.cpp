@@ -11,6 +11,7 @@
 #include "SDL_mixer.h"
 #include "InputModule.h"
 #include "GSLogoState.h"
+#include "GSMainMenuState.h"
 #include "GSGameplayState.h"
 
 
@@ -21,8 +22,7 @@ using namespace std;
 ///////// Definicion de estructuras /////////////
 
 ///////// Variables y Constantes Globales /////////////
-const int WIDTH = 640;
-const int HEIGHT = 480;
+
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_bool isGameRunning = SDL_TRUE;
@@ -35,7 +35,6 @@ GameStages gameStages;
 Sprite paleta1;
 Sprite paleta2;
 
-extern bool isOnPressStart = true;
 ResourceManager resourceManager;
 
 
@@ -65,6 +64,7 @@ void initEngine()
 	resourceManager.musicAssets = &musicAssets;
 	resourceManager.gameStages = &gameStages;
 	resourceManager.inputState = &gameInputState;
+	resourceManager.renderer = renderer;
 
 	// Starting Game stage
 	GameStage logoGameStage;
@@ -238,7 +238,6 @@ void inputUpdate() {
 }
 
 // Para ser usado en distintos contadores..
-extern float timer = 1.0f * 1000; // 1000 ms
 
 void updateGame(float deltaTime) {
 	// Small state machine using stack collection
@@ -248,9 +247,9 @@ void updateGame(float deltaTime) {
 		GSLogoStateUpdate(deltaTime, resourceManager);
 		break;
 	case GS_MAIN_MENU:
+		GSMainMenuStateUpdate(deltaTime, resourceManager);
 		break;
 	case GS_GAMEPLAY:
-		hideAssets();
 		GSGameplayStateUpdate(deltaTime, resourceManager);
 		break;
 	case GS_INVALID:
@@ -296,7 +295,7 @@ int main(int argc, char* argv[])
 
 	hideAssets();
 
-	Mix_PlayMusic(musicAssets[0].music, -1);
+	//Mix_PlayMusic(musicAssets[0].music, -1);
 
 	Uint64 currentTime = SDL_GetTicks64();
 
