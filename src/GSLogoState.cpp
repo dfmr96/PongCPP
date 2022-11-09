@@ -1,21 +1,20 @@
 #include "GSLogoState.h"
 #include "StructsDef.h"
 
-bool isSinglePlayer = true;
 
 void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
 	InputState inputState = *resource.inputState;
-	GameStages gameStages = *resource.gameStages;
 	TextAssets& textAssets = *resource.textAssets;
-
 	SpriteAssets& spriteAssets = *resource.spritesAssets;
-	Sprite& player1 = spriteAssets[1];
-	Sprite& player2 = spriteAssets[2];
+	GameStages& gameStages = *resource.gameStages;
 
 	const float BLINK_SPEED = 2.0f;
 	extern float timer;
 
 	extern bool isOnPressStart;
+	bool isSinglePlayer = false;
+
+	// Create Gameplay Stage
 	
 
 	/// START
@@ -26,16 +25,17 @@ void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
 
 	timer -= BLINK_SPEED * deltaTime;
 
+	// Si esta mostrando PRESS START -> Que parpadee PRESS START
 	if (isOnPressStart) {
-		// para efecto de parpadeo...
 		if (timer <= 0.0f) {
 			timer = 1.0f * 1000;
 			textAssets[0].isVisible = !textAssets[0].isVisible;
 		}
 	}
 
+	//Si es presionado Start -> Esconde logo y press start, se activa la seleccion de jugador
 
-	if (inputState.start) {
+	if (inputState.start && isOnPressStart) {
 		isOnPressStart = false;
 		textAssets[0].isVisible = false;
 		textAssets[1].isVisible = true;
@@ -43,19 +43,26 @@ void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
 		isSinglePlayer = true;
 	}
 	
-	if (inputState.back) {
+	// Si esta seleccionando jugador y presiona ESC -> Vuelve a PRESS START
+
+	if (inputState.back && !isOnPressStart) {
 		isOnPressStart = true;
 		textAssets[1].isVisible = false;
 		textAssets[2].isVisible = false;
 	}
 
+	// Si presiona abajo es multiplayer
+
 	if (inputState.player1Down) {
 		isSinglePlayer = false;
 	}
 
+	//Si presiona arriba es singleplayer
 	if (inputState.player1Up) {
 		isSinglePlayer = true;
 	}
+
+	//Si esta en seleccion y es single player parpadea
 
 	if (isSinglePlayer && !isOnPressStart) {
 		if (timer <= 0.0f) {
@@ -63,8 +70,17 @@ void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
 			textAssets[1].isVisible = !textAssets[1].isVisible;
 			textAssets[2].isVisible = true;
 		}
+		if (inputState.start) {
+			
+			GameStage gamePlayStage;
+			gamePlayStage.game_stageID = GS_GAMEPLAY;
+			gamePlayStage.stage_name = "Gameplay";
+			gameStages.push(gamePlayStage);
+
+		}
 	}
-	else if (!isSinglePlayer && !isOnPressStart) {
+	else if (!isSinglePlayer && !isOnPressStart) 	//Si esta en seleccion y no es single player parpadea
+	{
 		if (timer <= 0.0f) {
 			timer = 1.0f * 1000;
 			textAssets[2].isVisible = !textAssets[2].isVisible;
@@ -73,33 +89,14 @@ void GSLogoStateUpdate(float deltaTime, ResourceManager& resource) {
 		}
 	}
 
-	// Si presione cualquier tecla (arriba, abajo, izquierda
-	if (inputState.player1Up) {
-		player1.dest.y -= 0.5 * deltaTime;
-	}
-	if (inputState.player1Down) {
-		player1.dest.y += 0.5 * deltaTime;
-	}
-	if (inputState.player2Up) {
-		player2.dest.y -= 0.5 * deltaTime;
-	}
-	if (inputState.player2Down) {
-		player2.dest.y += 0.5 * deltaTime;
-	}
 
-	if (player1.dest.y <= 0) {
-		player1.dest.y = 0;
-	}
+/*
+	if (inputState.start) {
 
-	if (player1.dest.y >= (480 - 30)) {
-		player1.dest.y = 450;
+		GameStage mainMenuGameStage;
+		mainMenuGameStage.game_stageID = GS_GAMEPLAY;
+		mainMenuGameStage.stage_name = "Gameplay";
+		gameStages.push(mainMenuGameStage);
 	}
-
-	if (player2.dest.y <= 0) {
-		player2.dest.y = 0;
-	}
-
-	if (player2.dest.y >= (480 - 30)) {
-		player2.dest.y = 450;
-	}
+*/
 }

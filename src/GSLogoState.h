@@ -2,4 +2,4 @@
 
 #include "StructsDef.h"
 
-void GSLogoStateUpdate(float delta, ResourceManager& resource);
+void GSLogoStateUpdate(float deltaTime, ResourceManager& resource);

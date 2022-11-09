@@ -11,6 +11,8 @@
 #include "SDL_mixer.h"
 #include "InputModule.h"
 #include "GSLogoState.h"
+#include "GSGameplayState.h"
+
 
 using namespace std;
 
@@ -30,12 +32,12 @@ SpriteAssets spritesAssets;
 TextAssets textAssets;
 BgmAssets musicAssets;
 GameStages gameStages;
-
 Sprite paleta1;
 Sprite paleta2;
 
 extern bool isOnPressStart = true;
 ResourceManager resourceManager;
+
 
 ///////// Variables y Constantes Globales /////////////
 
@@ -68,7 +70,6 @@ void initEngine()
 	GameStage logoGameStage;
 	logoGameStage.game_stageID = GS_LOGO;
 	logoGameStage.stage_name = "Logo";
-
 	gameStages.push(logoGameStage);
 }
 
@@ -249,6 +250,8 @@ void updateGame(float deltaTime) {
 	case GS_MAIN_MENU:
 		break;
 	case GS_GAMEPLAY:
+		hideAssets();
+		GSGameplayStateUpdate(deltaTime, resourceManager);
 		break;
 	case GS_INVALID:
 	default:
