@@ -12,7 +12,7 @@ namespace logo {
 
 	int subState = INIT_STATE;
 	float timer = 0;
-	const float LOGO_TIME = 5000.0f;
+	const float LOGO_TIME = 2000.0f;
 	int logo_resourceID = -1;
 }
 
