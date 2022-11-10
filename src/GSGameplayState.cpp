@@ -12,8 +12,8 @@ namespace gameplay {
 	};
 
 	const float pongSpeed = 0.5f;
-	float ballSpeed_X = 0.25f;
-	float ballSpeed_Y = 0.10f;
+	float ballSpeed_X;
+	float ballSpeed_Y;
 	int subState = INIT_STATE;
 
 
@@ -111,6 +111,26 @@ namespace gameplay {
 		}
 	}
 
+	void BallInitSpeed() {
+
+		srand(time(NULL));
+		int xSide = rand() % 2;
+		int ySide = rand() % 2;
+		float randomX = (10 + rand() % 25) / 100.00f;
+		float randomY = (10 +rand() % 25) / 100.00f;
+
+		if (xSide == 0) {
+			randomX = -randomX;
+		}
+
+		if (ySide == 0) {
+			randomY = -randomY;
+		}
+
+		ballSpeed_X = randomX;
+		ballSpeed_Y = randomY;
+	}
+
 	void BallMovement(float deltaTime, ResourceManager& resource) {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 
@@ -142,6 +162,7 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 	switch (subState) {
 	case INIT_STATE:
 		LoadAssets(resource);
+		BallInitSpeed();
 		subState = UPDATE_STATE;
 		break;
 	case UPDATE_STATE:
