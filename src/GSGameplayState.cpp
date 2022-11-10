@@ -2,6 +2,7 @@
 #include "StructsDef.h"
 #include "SDL.h"
 #include "SDL_image.h"
+#include "GameplayStructsDef.h"
 
 namespace gameplay {
 	enum SUBSTATE {
@@ -11,7 +12,8 @@ namespace gameplay {
 	};
 
 	const float pongSpeed = 0.5f;
-	const float ballSpeed = 0.25f;
+	float ballSpeed_X = 0.25f;
+	float ballSpeed_Y = 0.10f;
 	int subState = INIT_STATE;
 
 
@@ -19,6 +21,9 @@ namespace gameplay {
 	int player2Sprite_ResourceID = -1;
 	int ballSprite_ResourceID = -1;
 
+	Player player1;
+	Player player2;
+	Ball ball;
 
 
 	void LoadAssets(ResourceManager& resource) {
@@ -67,6 +72,9 @@ namespace gameplay {
 
 		ballSprite_ResourceID = spritesAssets.size() - 1;
 
+		player1.sprite = &spritesAssets[player1Sprite_ResourceID];
+		player2.sprite = &spritesAssets[player2Sprite_ResourceID];
+		ball.sprite = &spritesAssets[ballSprite_ResourceID];
 	}
 
 	void UpdateMovements(float deltaTime, ResourceManager& resource) {
@@ -74,39 +82,55 @@ namespace gameplay {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 
 		if (inputState.player1Up) {
-			spritesAssets[player1Sprite_ResourceID].dest.y -= 0.5 * deltaTime;
+			player1.sprite->dest.y -= 0.5 * deltaTime;
 		}
 		if (inputState.player1Down) {
-			spritesAssets[player1Sprite_ResourceID].dest.y += 0.5 * deltaTime;
+			player1.sprite->dest.y += 0.5 * deltaTime;
 		}
 		if (inputState.player2Up) {
-			spritesAssets[player2Sprite_ResourceID].dest.y -= 0.5 * deltaTime;
+			player2.sprite->dest.y -= 0.5 * deltaTime;
 		}
 		if (inputState.player2Down) {
-			spritesAssets[player2Sprite_ResourceID].dest.y += 0.5 * deltaTime;
+			player2.sprite->dest.y += 0.5 * deltaTime;
 		}
 
-		if (spritesAssets[player1Sprite_ResourceID].dest.y <= 0) {
-			spritesAssets[player1Sprite_ResourceID].dest.y = 0;
+		if (player1.sprite->dest.y <= 0) {
+			player1.sprite->dest.y = 0;
 		}
 
-		if (spritesAssets[player1Sprite_ResourceID].dest.y >= (480 - 30)) {
-			spritesAssets[player1Sprite_ResourceID].dest.y = 450;
+		if (player1.sprite->dest.y >= (480 - 30)) {
+			player1.sprite->dest.y = 450;
 		}
 
-		if (spritesAssets[player2Sprite_ResourceID].dest.y <= 0) {
-			spritesAssets[player2Sprite_ResourceID].dest.y = 0;
+		if (player2.sprite->dest.y <= 0) {
+			player2.sprite->dest.y = 0;
 		}
 
-		if (spritesAssets[player2Sprite_ResourceID].dest.y >= (480 - 30)) {
-			spritesAssets[player2Sprite_ResourceID].dest.y = 450;
+		if (player2.sprite->dest.y >= (480 - 30)) {
+			player2.sprite->dest.y = 450;
 		}
 	}
 
 	void BallMovement(float deltaTime, ResourceManager& resource) {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 
-		spritesAssets[ballSprite_ResourceID].dest.x += ballSpeed * deltaTime;
+		ball.sprite->dest.x += ballSpeed_X * deltaTime;
+		ball.sprite->dest.y += ballSpeed_Y * deltaTime;
+	}
+
+	void UpdateColission(float deltaTime, ResourceManager& resource) {
+		SpriteAssets& spritesAssets = *resource.spritesAssets;
+
+		SDL_Rect* player1Rect = &player1.sprite->dest;
+		SDL_Rect* player2Rect = &player2.sprite->dest;
+		SDL_Rect* ballRect = &spritesAssets[ballSprite_ResourceID].dest;
+
+		bool player1hit = SDL_HasIntersection(player1Rect, ballRect);
+		bool player2hit = SDL_HasIntersection(player2Rect, ballRect);
+
+		if (player1hit || player2hit) {
+			ballSpeed_X = -ballSpeed_X;
+		}
 	}
 }
 
@@ -123,6 +147,7 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 	case UPDATE_STATE:
 		UpdateMovements(deltaTime, resource);
 		BallMovement(deltaTime, resource);
+		UpdateColission(deltaTime, resource);
 		break;
 	}
 }
