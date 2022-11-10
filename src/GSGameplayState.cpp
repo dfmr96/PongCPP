@@ -11,12 +11,13 @@ namespace gameplay {
 	};
 
 	const float pongSpeed = 0.5f;
-	const float ballSpeed = 1.00f;
+	const float ballSpeed = 0.25f;
 	int subState = INIT_STATE;
 
 
 	int player1Sprite_ResourceID = -1;
 	int player2Sprite_ResourceID = -1;
+	int ballSprite_ResourceID = -1;
 
 
 
@@ -50,6 +51,21 @@ namespace gameplay {
 		spritesAssets.push_back(player2Sprite);
 
 		player2Sprite_ResourceID = spritesAssets.size() - 1;
+
+		string ballFilePath = "assets/img/pelota.png";
+		SDL_Texture* ballTexture = IMG_LoadTexture(renderer, ballFilePath.c_str());
+		SDL_Rect ballDest;
+		ballDest.x = WIDTH >> 1;
+		ballDest.y = HEIGHT >> 1;
+		ballDest.w = 8;
+		ballDest.h = 8;
+
+		Sprite ballSprite;
+		ballSprite.dest = ballDest;
+		ballSprite.texture = ballTexture;
+		spritesAssets.push_back(ballSprite);
+
+		ballSprite_ResourceID = spritesAssets.size() - 1;
 
 	}
 
@@ -86,6 +102,12 @@ namespace gameplay {
 			spritesAssets[player2Sprite_ResourceID].dest.y = 450;
 		}
 	}
+
+	void BallMovement(float deltaTime, ResourceManager& resource) {
+		SpriteAssets& spritesAssets = *resource.spritesAssets;
+
+		spritesAssets[ballSprite_ResourceID].dest.x += ballSpeed * deltaTime;
+	}
 }
 
 using namespace gameplay;
@@ -100,6 +122,7 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 		break;
 	case UPDATE_STATE:
 		UpdateMovements(deltaTime, resource);
+		BallMovement(deltaTime, resource);
 		break;
 	}
 }
