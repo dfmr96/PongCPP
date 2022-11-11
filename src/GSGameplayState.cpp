@@ -12,8 +12,8 @@ namespace gameplay {
 	};
 
 	const float pongSpeed = 0.5f;
-	float ballSpeed_X;
-	float ballSpeed_Y;
+	float ballSpeed_X = 0;
+	float ballSpeed_Y = 0;
 	int subState = INIT_STATE;
 
 
@@ -29,12 +29,33 @@ namespace gameplay {
 	Player player1;
 	Player player2;
 	Ball ball;
+	bool resetBall = false;
+	float ballTimer = 0.00f;
+
+	const float BALL_SPAWN_TIME = 1500.00f;
+
 
 
 	void LoadAssets(ResourceManager& resource) {
 		SDL_Renderer* renderer = resource.renderer;
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
+		TextAssets& textAssets = *resource.textAssets;
 
+		string fontFilePath = "assets/fonts/bit5x3.ttf";
+		TTF_Font* bit5x3 = TTF_OpenFont(fontFilePath.c_str(), 64); //this opens a font style and sets a size
+		SDL_Color White = { 255, 255, 255 };  // this is the color in rgb format, maxing out all would give you the color white, and it will be your text's color
+		SDL_Surface* player1ScoreSurface = TTF_RenderText_Solid(bit5x3, "${player1}", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+		SDL_Texture* player1ScoreTexture = SDL_CreateTextureFromSurface(renderer, player1ScoreSurface); //now you can convert it into a texture
+
+		Text player1ScoreText;
+		player1ScoreText.font = bit5x3;
+		player1ScoreText.color = White;
+		player1ScoreText.surface = player1ScoreSurface;
+		player1ScoreText.texture = player1ScoreTexture;
+		player1ScoreText.dest = multiPlayerRect;
+
+		textAssets.push_back(player1ScoreText);
+		player1Text_resourceID = textAssets.size() - 1;
 
 
 		string paletaFilePath = "assets/img/paleta.png";
@@ -44,6 +65,12 @@ namespace gameplay {
 		paletaDest.y = (HEIGHT >> 1) - 15;
 		paletaDest.w = 8;
 		paletaDest.h = 30;
+
+		SDL_Rect paleta2Dest;
+		paleta2Dest.x = WIDTH - (WIDTH >> 4);
+		paleta2Dest.y = (HEIGHT >> 1) - 15;
+		paleta2Dest.w = 8;
+		paleta2Dest.h = 30;
 
 		Sprite player1Sprite;
 
@@ -55,8 +82,7 @@ namespace gameplay {
 
 		Sprite player2Sprite;
 
-		player2Sprite.dest = paletaDest;
-		player2Sprite.dest.x = WIDTH - paletaDest.x;
+		player2Sprite.dest = paleta2Dest;
 		player2Sprite.texture = paletaTexture;
 		spritesAssets.push_back(player2Sprite);
 
@@ -98,6 +124,22 @@ namespace gameplay {
 		bottomBoundRect.h = 1;
 
 		bottomBound.rect = bottomBoundRect;
+
+		SDL_Rect leftBoundRect;
+		leftBoundRect.x = 0;
+		leftBoundRect.y = 0;
+		leftBoundRect.w = 5;
+		leftBoundRect.h = HEIGHT;
+
+		leftBound.rect = leftBoundRect;
+
+		SDL_Rect rightBoundRect;
+		rightBoundRect.x = WIDTH;
+		rightBoundRect.y = 0;
+		rightBoundRect.w = 5;
+		rightBoundRect.h = HEIGHT;
+
+		rightBound.rect = rightBoundRect;
 	}
 
 	void UpdateMovements(float deltaTime, ResourceManager& resource) {
@@ -135,7 +177,7 @@ namespace gameplay {
 	}
 
 	void BallInitSpeed() {
-
+		
 		srand(time(NULL));
 		int xSide = rand() % 2;
 		int ySide = rand() % 2;
@@ -161,6 +203,30 @@ namespace gameplay {
 		ball.sprite->dest.y += ballSpeed_Y * deltaTime;
 	}
 
+	void BallReset(float deltaTime, ResourceManager& resource) {
+		SpriteAssets& spritesAssets = *resource.spritesAssets;
+
+		ball.sprite->dest.x = WIDTH >> 1;
+		ball.sprite->dest.y = HEIGHT >> 1;
+
+		ballTimer += deltaTime;
+
+		if (ballTimer > BALL_SPAWN_TIME) {
+			BallInitSpeed();
+			resetBall = false;
+			ballTimer = 0.00f;
+		}
+
+	}
+	void IncreaseBallSpeed() {
+		if (ballSpeed_X > 0) {
+			ballSpeed_X += 0.01f;
+		}
+		else {
+			ballSpeed_X -= 0.01f;
+		}
+	}
+
 	void UpdateColission(float deltaTime, ResourceManager& resource) {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 
@@ -168,20 +234,34 @@ namespace gameplay {
 		SDL_Rect* player2Rect = &player2.sprite->dest;
 		SDL_Rect* ballRect = &ball.sprite->dest;
 
-		bool player1hit = SDL_HasIntersection(player1Rect, ballRect);
-		bool player2hit = SDL_HasIntersection(player2Rect, ballRect);
-		bool topBoundhit = SDL_HasIntersection(ballRect, &topBound.rect);
-		bool bottomBoundhit = SDL_HasIntersection(ballRect, &bottomBound.rect);
+		bool player1Hit = SDL_HasIntersection(player1Rect, ballRect);
+		bool player2Hit = SDL_HasIntersection(player2Rect, ballRect);
+		bool topBoundHit = SDL_HasIntersection(ballRect, &topBound.rect);
+		bool bottomBoundHit = SDL_HasIntersection(ballRect, &bottomBound.rect);
+		bool leftBoundHit = SDL_HasIntersection(ballRect, &leftBound.rect);
+		bool rightBoundHit = SDL_HasIntersection(ballRect, &rightBound.rect);
 
-
-		if (player1hit || player2hit) {
+		if (player1Hit || player2Hit) {
 			ballSpeed_X = -ballSpeed_X;
+			IncreaseBallSpeed();
 		}
 
-		if (topBoundhit || bottomBoundhit) {
+		if (topBoundHit || bottomBoundHit) {
 			ballSpeed_Y = -ballSpeed_Y;
 		}
+
+		if (leftBoundHit || rightBoundHit) {
+			ballSpeed_X = 0;
+			ballSpeed_Y = 0;
+			SDL_Delay(500);
+			resetBall = true;
+		}
+		if (resetBall) {
+			BallReset(deltaTime, resource);
+		}
 	}
+
+	
 }
 
 using namespace gameplay;
