@@ -17,3 +17,7 @@ typedef struct _Ball {
 	Sprite* sprite;
 	Speed speed;
 }Ball;
+
+typedef struct _Boundary {
+	SDL_Rect rect;
+}Boundary;

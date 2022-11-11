@@ -21,6 +21,11 @@ namespace gameplay {
 	int player2Sprite_ResourceID = -1;
 	int ballSprite_ResourceID = -1;
 
+
+	Boundary topBound;
+	Boundary bottomBound;
+	Boundary leftBound;
+	Boundary rightBound;
 	Player player1;
 	Player player2;
 	Ball ball;
@@ -77,6 +82,24 @@ namespace gameplay {
 		ball.sprite = &spritesAssets[ballSprite_ResourceID];
 	}
 
+	void InitBoundaries() {
+		SDL_Rect topBoundRect;
+		topBoundRect.x = 0;
+		topBoundRect.y = 0;
+		topBoundRect.w = WIDTH;
+		topBoundRect.h = 1;
+
+		topBound.rect = topBoundRect;
+
+		SDL_Rect bottomBoundRect;
+		bottomBoundRect.x = 0;
+		bottomBoundRect.y = HEIGHT;
+		bottomBoundRect.w = WIDTH;
+		bottomBoundRect.h = 1;
+
+		bottomBound.rect = bottomBoundRect;
+	}
+
 	void UpdateMovements(float deltaTime, ResourceManager& resource) {
 		InputState inputState = *resource.inputState;
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
@@ -116,8 +139,8 @@ namespace gameplay {
 		srand(time(NULL));
 		int xSide = rand() % 2;
 		int ySide = rand() % 2;
-		float randomX = (10 + rand() % 25) / 100.00f;
-		float randomY = (10 +rand() % 25) / 100.00f;
+		float randomX = (10 + rand() % 15) / 100.00f;
+		float randomY = (10 +rand() % 15) / 100.00f;
 
 		if (xSide == 0) {
 			randomX = -randomX;
@@ -143,13 +166,20 @@ namespace gameplay {
 
 		SDL_Rect* player1Rect = &player1.sprite->dest;
 		SDL_Rect* player2Rect = &player2.sprite->dest;
-		SDL_Rect* ballRect = &spritesAssets[ballSprite_ResourceID].dest;
+		SDL_Rect* ballRect = &ball.sprite->dest;
 
 		bool player1hit = SDL_HasIntersection(player1Rect, ballRect);
 		bool player2hit = SDL_HasIntersection(player2Rect, ballRect);
+		bool topBoundhit = SDL_HasIntersection(ballRect, &topBound.rect);
+		bool bottomBoundhit = SDL_HasIntersection(ballRect, &bottomBound.rect);
+
 
 		if (player1hit || player2hit) {
 			ballSpeed_X = -ballSpeed_X;
+		}
+
+		if (topBoundhit || bottomBoundhit) {
+			ballSpeed_Y = -ballSpeed_Y;
 		}
 	}
 }
@@ -162,6 +192,7 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 	switch (subState) {
 	case INIT_STATE:
 		LoadAssets(resource);
+		InitBoundaries();
 		BallInitSpeed();
 		subState = UPDATE_STATE;
 		break;
