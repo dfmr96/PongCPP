@@ -222,6 +222,7 @@ xcopy "$(ProjectDir)..\assets" "$(OutDir)\assets" /Y  /E /C /I</Command>
     <ClCompile Include="..\src\GSLogoState.cpp" />
     <ClCompile Include="..\src\GSMainMenuState.cpp" />
     <ClCompile Include="..\src\InputModule.cpp" />
+    <ClCompile Include="..\src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\GameplayStructsDef.h" />
@@ -230,6 +231,7 @@ xcopy "$(ProjectDir)..\assets" "$(OutDir)\assets" /Y  /E /C /I</Command>
     <ClInclude Include="..\src\GSMainMenuState.h" />
     <ClInclude Include="..\src\InputModule.h" />
     <ClInclude Include="..\src\StructsDef.h" />
+    <ClInclude Include="..\src\Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

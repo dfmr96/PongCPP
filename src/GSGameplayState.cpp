@@ -3,6 +3,8 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "GameplayStructsDef.h"
+#include <string>
+#include "Utils.h"
 
 namespace gameplay {
 	enum SUBSTATE {
@@ -20,7 +22,11 @@ namespace gameplay {
 	int player1Sprite_ResourceID = -1;
 	int player2Sprite_ResourceID = -1;
 	int ballSprite_ResourceID = -1;
-
+	int player1ScoreText_ResourceID = -1;
+	int player2ScoreText_ResourceID = -1;
+	int golMusic_ResourceID = -1;
+	int bounceMusic_ResourceID = -1;
+	int paletMusic_ResourceID = -1;
 
 	Boundary topBound;
 	Boundary bottomBound;
@@ -28,6 +34,9 @@ namespace gameplay {
 	Boundary rightBound;
 	Player player1;
 	Player player2;
+
+	const float BALL_BLINK_SPEED = 1.0f;
+	
 	Ball ball;
 	bool resetBall = false;
 	float ballTimer = 0.00f;
@@ -40,22 +49,46 @@ namespace gameplay {
 		SDL_Renderer* renderer = resource.renderer;
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 		TextAssets& textAssets = *resource.textAssets;
+		BgmAssets& musicAssets = *resource.musicAssets;
 
 		string fontFilePath = "assets/fonts/bit5x3.ttf";
-		TTF_Font* bit5x3 = TTF_OpenFont(fontFilePath.c_str(), 64); //this opens a font style and sets a size
+		TTF_Font* bit5x3 = TTF_OpenFont(fontFilePath.c_str(), 36); //this opens a font style and sets a size
 		SDL_Color White = { 255, 255, 255 };  // this is the color in rgb format, maxing out all would give you the color white, and it will be your text's color
-		SDL_Surface* player1ScoreSurface = TTF_RenderText_Solid(bit5x3, "${player1}", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+		SDL_Surface* player1ScoreSurface = TTF_RenderText_Solid(bit5x3, "0", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
 		SDL_Texture* player1ScoreTexture = SDL_CreateTextureFromSurface(renderer, player1ScoreSurface); //now you can convert it into a texture
+		SDL_Rect player1ScoreRect;
+		player1ScoreRect.h = HEIGHT * 0.2;
+		player1ScoreRect.w = WIDTH * 0.06;
+		player1ScoreRect.x = (WIDTH >> 1) - (player1ScoreRect.w * 3/2);
+		player1ScoreRect.y = HEIGHT >> 4;
 
 		Text player1ScoreText;
 		player1ScoreText.font = bit5x3;
 		player1ScoreText.color = White;
 		player1ScoreText.surface = player1ScoreSurface;
 		player1ScoreText.texture = player1ScoreTexture;
-		player1ScoreText.dest = multiPlayerRect;
+		player1ScoreText.dest = player1ScoreRect;
 
 		textAssets.push_back(player1ScoreText);
-		player1Text_resourceID = textAssets.size() - 1;
+		player1ScoreText_ResourceID = textAssets.size() - 1;
+
+		SDL_Surface* player2ScoreSurface = TTF_RenderText_Solid(bit5x3, "0", White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+		SDL_Texture* player2ScoreTexture = SDL_CreateTextureFromSurface(renderer, player2ScoreSurface); //now you can convert it into a texture
+		SDL_Rect player2ScoreRect;
+		player2ScoreRect.h = HEIGHT * 0.2;
+		player2ScoreRect.w = WIDTH * 0.06;
+		player2ScoreRect.x = (WIDTH >> 1) + (player2ScoreRect.w * 1/ 2);
+		player2ScoreRect.y = HEIGHT >> 4;
+
+		Text player2ScoreText;
+		player2ScoreText.font = bit5x3;
+		player2ScoreText.color = White;
+		player2ScoreText.surface = player2ScoreSurface;
+		player2ScoreText.texture = player2ScoreTexture;
+		player2ScoreText.dest = player2ScoreRect;
+
+		textAssets.push_back(player2ScoreText);
+		player2ScoreText_ResourceID = textAssets.size() - 1;
 
 
 		string paletaFilePath = "assets/img/paleta.png";
@@ -106,6 +139,39 @@ namespace gameplay {
 		player1.sprite = &spritesAssets[player1Sprite_ResourceID];
 		player2.sprite = &spritesAssets[player2Sprite_ResourceID];
 		ball.sprite = &spritesAssets[ballSprite_ResourceID];
+
+		string golSoundFilePath = "assets/bgm/gol.mp3";
+		Mix_Music* golMusic;
+		golMusic = Mix_LoadMUS(golSoundFilePath.c_str());
+
+		Bgm bgm02;
+		bgm02.music = golMusic;
+
+		musicAssets.push_back(bgm02);
+
+		golMusic_ResourceID = musicAssets.size() - 1;
+
+		string bounceSoundFilePath = "assets/bgm/bounce.mp3";
+		Mix_Music* bounceMusic;
+		bounceMusic = Mix_LoadMUS(bounceSoundFilePath.c_str());
+
+		Bgm bgm03;
+		bgm03.music = bounceMusic;
+
+		musicAssets.push_back(bgm03);
+
+		bounceMusic_ResourceID = musicAssets.size() - 1;
+
+		string paletSoundFilePath = "assets/bgm/palet.mp3";
+		Mix_Music* paletMusic;
+		paletMusic = Mix_LoadMUS(paletSoundFilePath.c_str());
+
+		Bgm bgm04;
+		bgm04.music = paletMusic;
+
+		musicAssets.push_back(bgm04);
+
+		paletMusic_ResourceID = musicAssets.size() - 1;
 	}
 
 	void InitBoundaries() {
@@ -229,10 +295,13 @@ namespace gameplay {
 
 	void UpdateColission(float deltaTime, ResourceManager& resource) {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
+		BgmAssets& musicAssets = *resource.musicAssets;
 
 		SDL_Rect* player1Rect = &player1.sprite->dest;
 		SDL_Rect* player2Rect = &player2.sprite->dest;
 		SDL_Rect* ballRect = &ball.sprite->dest;
+
+		float timer = 1;.00f;
 
 		bool player1Hit = SDL_HasIntersection(player1Rect, ballRect);
 		bool player2Hit = SDL_HasIntersection(player2Rect, ballRect);
@@ -242,15 +311,28 @@ namespace gameplay {
 		bool rightBoundHit = SDL_HasIntersection(ballRect, &rightBound.rect);
 
 		if (player1Hit || player2Hit) {
+			Mix_PlayMusic(musicAssets[paletMusic_ResourceID].music, 1);
 			ballSpeed_X = -ballSpeed_X;
 			IncreaseBallSpeed();
 		}
 
 		if (topBoundHit || bottomBoundHit) {
+			Mix_PlayMusic(musicAssets[bounceMusic_ResourceID].music, 1);
 			ballSpeed_Y = -ballSpeed_Y;
 		}
 
 		if (leftBoundHit || rightBoundHit) {
+
+			Mix_PlayMusic(musicAssets[golMusic_ResourceID].music, 1);
+			if (rightBoundHit) {
+				player1.points++;
+				changeTextFromSurface(std::to_string(player1.points), resource, player1ScoreText_ResourceID);
+			}
+
+			if (leftBoundHit) {
+				player2.points++;
+				changeTextFromSurface(std::to_string(player2.points), resource, player2ScoreText_ResourceID);
+			}
 			ballSpeed_X = 0;
 			ballSpeed_Y = 0;
 			SDL_Delay(500);
@@ -273,7 +355,8 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 	case INIT_STATE:
 		LoadAssets(resource);
 		InitBoundaries();
-		BallInitSpeed();
+		resetBall = true;
+		BallReset(deltaTime,resource);
 		subState = UPDATE_STATE;
 		break;
 	case UPDATE_STATE:
