@@ -18,6 +18,8 @@ namespace mainmenu {
 	int pressStartText_resourceID = -1;
 	int singlePlayerText_resourceID = -1;
 	int multiPlayerText_resourceID = -1;
+	int bg_resourceID = -1;
+
 
 	void LoadAssets(ResourceManager& resource) {
 
@@ -27,7 +29,7 @@ namespace mainmenu {
 		SDL_Renderer* renderer = resource.renderer;
 		SpriteAssets& spritesAssets = *(resource.spritesAssets);
 
-		string filePath = "assets/img/ultimatepong.png";
+		string filePath = "assets/img/background.png";
 		SDL_Texture* texture = IMG_LoadTexture(renderer, filePath.c_str());
 		SDL_Rect dest;
 		dest.x = 0;
@@ -35,9 +37,24 @@ namespace mainmenu {
 		dest.w = WIDTH;
 		dest.h = HEIGHT;
 
+		Sprite bgSprite;
+		bgSprite.dest = dest;
+		bgSprite.texture = texture;
+		spritesAssets.push_back(bgSprite); // Se agrega al final del vector
+
+		bg_resourceID = spritesAssets.size() - 1; // Entonces obtengo el indice del asset agregado, asi luego lo puedo usar o eliminar.
+
+		string logofilePath = "assets/img/ultimatepong.png";
+		SDL_Texture* logoTexture = IMG_LoadTexture(renderer, logofilePath.c_str());
+		SDL_Rect logoDest;
+		logoDest.x = 0;
+		logoDest.y = 0;
+		logoDest.w = WIDTH;
+		logoDest.h = HEIGHT;
+
 		Sprite logoSprite;
-		logoSprite.dest = dest;
-		logoSprite.texture = texture;
+		logoSprite.dest = logoDest;
+		logoSprite.texture = logoTexture;
 		spritesAssets.push_back(logoSprite);
 
 		mainTitle_resourceID = spritesAssets.size() - 1;
@@ -113,6 +130,22 @@ namespace mainmenu {
 		textAssets[singlePlayerText_resourceID].isVisible = false;
 		textAssets[multiPlayerText_resourceID].isVisible = false;
 	}
+
+	void unloadAssets(ResourceManager& resource) {
+		SpriteAssets& spritesAssets = *resource.spritesAssets;
+		TextAssets& textAssets = *resource.textAssets;
+		BgmAssets& musicAssets = *resource.musicAssets;
+
+		for (int i = 0; i < spritesAssets.size(); i++) {
+			SDL_DestroyTexture(spritesAssets[i].texture);
+			spritesAssets.erase(spritesAssets.begin());
+
+		}
+
+		for (int i = 0; i < textAssets.size(); i++) {
+			textAssets[i].isVisible = false;
+		}
+	}
 }
 
 using namespace mainmenu;
@@ -163,9 +196,13 @@ void GSMainMenuStateUpdate(float deltaTime, ResourceManager& resource)
 		break;
 
 	case ENDING_STATE:
-		HideAssets(resource);
+		unloadAssets(resource);
+		subState = INIT_STATE;
+		gameStages.pop();
+
 		GameStage gamePlayStage;
 		gamePlayStage.game_stageID = GS_GAMEPLAY;
+		gamePlayStage.stage_name = "Gameplay";
 		gameStages.push(gamePlayStage);
 		break;
 	}

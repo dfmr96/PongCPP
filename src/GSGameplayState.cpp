@@ -10,6 +10,7 @@ namespace gameplay {
 	enum SUBSTATE {
 		INIT_STATE = 0,
 		UPDATE_STATE,
+		MATCH_ENDED,
 		ENDING_STATE,
 	};
 
@@ -18,15 +19,18 @@ namespace gameplay {
 	float ballSpeed_Y = 0;
 	int subState = INIT_STATE;
 
-
+	int bg_resourceID = -1;
 	int player1Sprite_ResourceID = -1;
 	int player2Sprite_ResourceID = -1;
 	int ballSprite_ResourceID = -1;
 	int player1ScoreText_ResourceID = -1;
 	int player2ScoreText_ResourceID = -1;
+	int player1WinsText_ResourceID = -1;
+	int player2WinsText_ResourceID = -1;
 	int golMusic_ResourceID = -1;
 	int bounceMusic_ResourceID = -1;
 	int paletMusic_ResourceID = -1;
+	
 
 	Boundary topBound;
 	Boundary bottomBound;
@@ -40,16 +44,22 @@ namespace gameplay {
 	Ball ball;
 	bool resetBall = false;
 	float ballTimer = 0.00f;
+	float collisionTimer = 0.00f;
+	float toMainMenuTimer = 0.00f;
 
 	const float BALL_SPAWN_TIME = 1500.00f;
-
-
+	const float BALL_COLLISION_TIME = 800.00f;
+	const float MAIN_MENU_TIME = 3000.00f;
+	const int MAX_POINTS = 5;
 
 	void LoadAssets(ResourceManager& resource) {
 		SDL_Renderer* renderer = resource.renderer;
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 		TextAssets& textAssets = *resource.textAssets;
 		BgmAssets& musicAssets = *resource.musicAssets;
+
+
+		////////TEXTOS///////////
 
 		string fontFilePath = "assets/fonts/bit5x3.ttf";
 		TTF_Font* bit5x3 = TTF_OpenFont(fontFilePath.c_str(), 36); //this opens a font style and sets a size
@@ -89,6 +99,61 @@ namespace gameplay {
 
 		textAssets.push_back(player2ScoreText);
 		player2ScoreText_ResourceID = textAssets.size() - 1;
+
+		SDL_Surface* player1WinsSurface = TTF_RenderText_Solid(bit5x3, "PLAYER 1 WINS", White);
+		SDL_Texture* player1WinsTexture = SDL_CreateTextureFromSurface(renderer, player1WinsSurface);
+		SDL_Rect player1WinsRect;
+		player1WinsRect.h = HEIGHT * 0.3;
+		player1WinsRect.w = WIDTH * 0.6;
+		player1WinsRect.x = (WIDTH >> 1) - (player1WinsRect.w * 1/2);
+		player1WinsRect.y = (HEIGHT >> 1) - (player1WinsRect.h * 1/2);
+
+		Text player1WinsText;
+		player1WinsText.font = bit5x3;
+		player1WinsText.color = White;
+		player1WinsText.surface = player1WinsSurface;
+		player1WinsText.texture = player1WinsTexture;
+		player1WinsText.dest = player1WinsRect;
+
+		textAssets.push_back(player1WinsText);
+		player1WinsText_ResourceID = textAssets.size() - 1;
+		textAssets[player1WinsText_ResourceID].isVisible = false;
+
+		SDL_Surface* player2WinsSurface = TTF_RenderText_Solid(bit5x3, "PLAYER 2 WINS", White);
+		SDL_Texture* player2WinsTexture = SDL_CreateTextureFromSurface(renderer, player2WinsSurface);
+		SDL_Rect player2WinsRect;
+		player2WinsRect.h = HEIGHT * 0.3;
+		player2WinsRect.w = WIDTH * 0.6;
+		player2WinsRect.x = (WIDTH >> 1) - (player1WinsRect.w * 1 / 2);
+		player2WinsRect.y = (HEIGHT >> 1) - (player1WinsRect.h * 1 / 2);
+
+		Text player2WinsText;
+		player2WinsText.font = bit5x3;
+		player2WinsText.color = White;
+		player2WinsText.surface = player2WinsSurface;
+		player2WinsText.texture = player2WinsTexture;
+		player2WinsText.dest = player2WinsRect;
+
+		textAssets.push_back(player2WinsText);
+		player2WinsText_ResourceID = textAssets.size() - 1;
+		textAssets[player2WinsText_ResourceID].isVisible = false;
+
+		///////SPRITES////////
+
+		string filePath = "assets/img/background.png";
+		SDL_Texture* texture = IMG_LoadTexture(renderer, filePath.c_str());
+		SDL_Rect dest;
+		dest.x = 0;
+		dest.y = 0;
+		dest.w = WIDTH;
+		dest.h = HEIGHT;
+
+		Sprite bgSprite;
+		bgSprite.dest = dest;
+		bgSprite.texture = texture;
+		spritesAssets.push_back(bgSprite); // Se agrega al final del vector
+
+		bg_resourceID = spritesAssets.size() - 1; // Entonces obtengo el indice del asset agregado, asi luego lo puedo usar o eliminar.
 
 
 		string paletaFilePath = "assets/img/paleta.png";
@@ -293,6 +358,26 @@ namespace gameplay {
 		}
 	}
 
+	void BounceBall(ResourceManager& resource) {
+		BgmAssets& musicAssets = *resource.musicAssets;
+
+		collisionTimer = 0.00f;
+		Mix_PlayMusic(musicAssets[paletMusic_ResourceID].music, 1);
+		ballSpeed_X = -ballSpeed_X;
+		IncreaseBallSpeed();
+	}
+
+	void MatchEnd(ResourceManager& resource, bool player1won) {
+		TextAssets& textAssets = *resource.textAssets;
+		if (player1won) {
+		textAssets[player1WinsText_ResourceID].isVisible = true;
+		}
+		else {
+		textAssets[player2WinsText_ResourceID].isVisible = true;
+		}
+		subState = MATCH_ENDED;
+	}
+
 	void UpdateColission(float deltaTime, ResourceManager& resource) {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 		BgmAssets& musicAssets = *resource.musicAssets;
@@ -301,7 +386,7 @@ namespace gameplay {
 		SDL_Rect* player2Rect = &player2.sprite->dest;
 		SDL_Rect* ballRect = &ball.sprite->dest;
 
-		float timer = 1;.00f;
+		collisionTimer += deltaTime;
 
 		bool player1Hit = SDL_HasIntersection(player1Rect, ballRect);
 		bool player2Hit = SDL_HasIntersection(player2Rect, ballRect);
@@ -310,10 +395,8 @@ namespace gameplay {
 		bool leftBoundHit = SDL_HasIntersection(ballRect, &leftBound.rect);
 		bool rightBoundHit = SDL_HasIntersection(ballRect, &rightBound.rect);
 
-		if (player1Hit || player2Hit) {
-			Mix_PlayMusic(musicAssets[paletMusic_ResourceID].music, 1);
-			ballSpeed_X = -ballSpeed_X;
-			IncreaseBallSpeed();
+		if ((player1Hit || player2Hit) && collisionTimer > BALL_COLLISION_TIME) {
+			BounceBall(resource);
 		}
 
 		if (topBoundHit || bottomBoundHit) {
@@ -327,11 +410,17 @@ namespace gameplay {
 			if (rightBoundHit) {
 				player1.points++;
 				changeTextFromSurface(std::to_string(player1.points), resource, player1ScoreText_ResourceID);
+				if (player1.points >= MAX_POINTS) {
+					MatchEnd(resource, true);
+				}
 			}
 
 			if (leftBoundHit) {
 				player2.points++;
 				changeTextFromSurface(std::to_string(player2.points), resource, player2ScoreText_ResourceID);
+				if (player2.points >= MAX_POINTS) {
+					MatchEnd(resource, false);
+				}
 			}
 			ballSpeed_X = 0;
 			ballSpeed_Y = 0;
@@ -342,7 +431,22 @@ namespace gameplay {
 			BallReset(deltaTime, resource);
 		}
 	}
+	void unloadAssets(ResourceManager& resource) {
+		SpriteAssets& spritesAssets = *resource.spritesAssets;
+		TextAssets& textAssets = *resource.textAssets;
+		BgmAssets& musicAssets = *resource.musicAssets;
 
+		for (int i = 0; i < spritesAssets.size(); i++) {
+			SDL_DestroyTexture(spritesAssets[i].texture);
+			spritesAssets.erase(spritesAssets.begin());
+		}
+
+		for (int i = 0; i < textAssets.size(); i++) {
+			SDL_DestroyTexture(textAssets[i].texture);
+			SDL_FreeSurface(textAssets[i].surface);
+			textAssets.erase(textAssets.begin());
+		}
+	}
 	
 }
 
@@ -350,9 +454,12 @@ using namespace gameplay;
 
 void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 {
+	GameStages& gameStages = *resource.gameStages;
 
 	switch (subState) {
 	case INIT_STATE:
+		player1.points = 0;
+		player2.points = 0;
 		LoadAssets(resource);
 		InitBoundaries();
 		resetBall = true;
@@ -363,6 +470,14 @@ void GSGameplayStateUpdate(float deltaTime, ResourceManager& resource)
 		UpdateMovements(deltaTime, resource);
 		BallMovement(deltaTime, resource);
 		UpdateColission(deltaTime, resource);
+		break;
+	case MATCH_ENDED:
+		toMainMenuTimer += deltaTime;
+
+		if (toMainMenuTimer > MAIN_MENU_TIME) {
+			unloadAssets(resource);
+			subState = INIT_STATE;
+		}
 		break;
 	}
 }
