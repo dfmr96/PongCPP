@@ -226,6 +226,7 @@ xcopy "$(ProjectDir)..\assets" "$(OutDir)\assets" /Y  /E /C /I</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\GameplayStructsDef.h" />
+    <ClInclude Include="..\src\Global.h" />
     <ClInclude Include="..\src\GSGameplayState.h" />
     <ClInclude Include="..\src\GSLogoState.h" />
     <ClInclude Include="..\src\GSMainMenuState.h" />

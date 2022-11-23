@@ -2,6 +2,8 @@
 #include "StructsDef.h"
 #include "SDL.h"
 #include "SDL_image.h"
+#include "Utils.h"
+#include "Global.h"
 
 namespace mainmenu {
 	enum SUBSTATE {
@@ -13,13 +15,16 @@ namespace mainmenu {
 
 	int subState = INIT_STATE;
 	float timer = 1.0f * 1000;
-
 	int mainTitle_resourceID = -1;
 	int pressStartText_resourceID = -1;
 	int singlePlayerText_resourceID = -1;
 	int multiPlayerText_resourceID = -1;
 	int bg_resourceID = -1;
 
+	const float BLINK_SPEED = 2.00f;
+
+	bool isOnPlayerSelect = false;
+	bool _2PlayersSelect = false;
 
 	void LoadAssets(ResourceManager& resource) {
 
@@ -157,11 +162,6 @@ void GSMainMenuStateUpdate(float deltaTime, ResourceManager& resource)
 	SpriteAssets& spriteAssets = *resource.spritesAssets;
 	GameStages& gameStages = *resource.gameStages;
 
-	const float BLINK_SPEED = 1.0f;
-
-	extern bool isOnPressStart;
-	bool isSinglePlayer = false;
-
 
 	timer -= BLINK_SPEED * deltaTime;
 
@@ -175,24 +175,54 @@ void GSMainMenuStateUpdate(float deltaTime, ResourceManager& resource)
 	case PRESSKEY_STATE:
 		if (timer <= 0.0f) {
 			timer = 1.0f * 1000;
-			textAssets[0].isVisible = !textAssets[0].isVisible;
+			textAssets[pressStartText_resourceID].isVisible = !textAssets[pressStartText_resourceID].isVisible;
 		}
 
 		if (inputState.start) {
-			
+
 			subState = MAINMENU_STATE;
+			isOnPlayerSelect = true;
 			textAssets[pressStartText_resourceID].isVisible = false;
 			textAssets[singlePlayerText_resourceID].isVisible = true;
 			textAssets[multiPlayerText_resourceID].isVisible = true;
 			SDL_Delay(500);
 		}
+
 		break;
 	case MAINMENU_STATE:
-		
-		if (inputState.start) {
 
-			subState = ENDING_STATE;
+		if (inputState.player2Down) {
+			_2PlayersSelect = true;
 		}
+		if (inputState.player2Up) {
+			_2PlayersSelect = false;
+		}
+		if (!textAssets[pressStartText_resourceID].isVisible) {
+			if (!_2PlayersSelect) {
+				textAssets[multiPlayerText_resourceID].isVisible = true;
+				if (timer <= 0.00f) {
+					timer = 1.0f * 1000;
+					textAssets[singlePlayerText_resourceID].isVisible = !textAssets[singlePlayerText_resourceID].isVisible;
+				}
+				if (inputState.start) {
+					singleplayer = true;
+					subState = ENDING_STATE;
+				}
+				
+			}
+			else {
+				textAssets[singlePlayerText_resourceID].isVisible = true;
+				if (timer <= 0.00f) {
+					timer = 1.0f * 1000;
+					textAssets[multiPlayerText_resourceID].isVisible = !textAssets[multiPlayerText_resourceID].isVisible;
+				}
+				if (inputState.start) {
+					singleplayer = false;
+					subState = ENDING_STATE;
+				}
+			}
+		}
+		
 		break;
 
 	case ENDING_STATE:

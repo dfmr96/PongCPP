@@ -13,7 +13,6 @@ namespace gameplay {
 		MATCH_ENDED,
 		ENDING_STATE,
 	};
-
 	const float pongSpeed = 0.5f;
 	float ballSpeed_X = 0;
 	float ballSpeed_Y = 0;
@@ -30,7 +29,7 @@ namespace gameplay {
 	int golMusic_ResourceID = -1;
 	int bounceMusic_ResourceID = -1;
 	int paletMusic_ResourceID = -1;
-	
+
 
 	Boundary topBound;
 	Boundary bottomBound;
@@ -47,6 +46,7 @@ namespace gameplay {
 	float collisionTimer = 0.00f;
 	float toMainMenuTimer = 0.00f;
 
+	const float PALET_SPEED = 0.5f;
 	const float BALL_SPAWN_TIME = 1500.00f;
 	const float BALL_COLLISION_TIME = 800.00f;
 	const float MAIN_MENU_TIME = 3000.00f;
@@ -278,23 +278,35 @@ namespace gameplay {
 		SpriteAssets& spritesAssets = *resource.spritesAssets;
 
 		if (inputState.player1Up) {
-			player1.sprite->dest.y -= 0.5 * deltaTime;
+			player1.sprite->dest.y -= PALET_SPEED * deltaTime;
 		}
 		if (inputState.player1Down) {
-			player1.sprite->dest.y += 0.5 * deltaTime;
+			player1.sprite->dest.y += PALET_SPEED * deltaTime;
 		}
-		if (inputState.player2Up) {
-			player2.sprite->dest.y -= 0.5 * deltaTime;
+
+		if (singleplayer) {
+			if (inputState.player2Up) {
+				player2.sprite->dest.y -= PALET_SPEED * deltaTime;
+			}
+			if (inputState.player2Down) {
+				player2.sprite->dest.y += PALET_SPEED * deltaTime;
+			}
 		}
-		if (inputState.player2Down) {
-			player2.sprite->dest.y += 0.5 * deltaTime;
+		else {
+			if (player2.sprite->dest.y > ball.sprite->dest.y) {
+				player2.sprite->dest.y -= PALET_SPEED * deltaTime;
+			}
+			if (player2.sprite->dest.y < ball.sprite->dest.y) {
+				player2.sprite->dest.y += PALET_SPEED * deltaTime;
+
+			}
 		}
 
 		if (player1.sprite->dest.y <= 0) {
 			player1.sprite->dest.y = 0;
 		}
 
-		if (player1.sprite->dest.y >= (480 - 30)) {
+		if (player1.sprite->dest.y >= (HEIGHT - 30)) {
 			player1.sprite->dest.y = 450;
 		}
 
@@ -302,7 +314,7 @@ namespace gameplay {
 			player2.sprite->dest.y = 0;
 		}
 
-		if (player2.sprite->dest.y >= (480 - 30)) {
+		if (player2.sprite->dest.y >= (HEIGHT - 30)) {
 			player2.sprite->dest.y = 450;
 		}
 	}
